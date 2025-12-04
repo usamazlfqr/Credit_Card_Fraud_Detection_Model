@@ -19,6 +19,7 @@ from sklearn.metrics import (
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline as ImbPipeline
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.inspection import permutation_importance
 
 
 
@@ -26,60 +27,8 @@ from sklearn.neighbors import KNeighborsClassifier
 #  LOAD DATA
 # ============================================================
 
-df = pd.read_csv("C:/Users/User.DESKTOP-LUMR9IQ/Documents/14570063-ML-Assignment/credit-card-fraud-detection.csv")
-
-print("Dataset shape:", df.shape)
-print(df.head())
-
-print("\nInitial Info:")
-print(df.info())
-
-print("\nMissing Values:")
-print(df.isnull().sum())
-
-
-# ============================================================
-#   CLEANING THE DATA
-# ============================================================
-
-# Convert datetime column
-df["transaction_datetime"] = pd.to_datetime(df["transaction_datetime"], errors="coerce")
-
-# Convert cardholder_age and transaction_amount to numeric
-df["cardholder_age"] = pd.to_numeric(df["cardholder_age"], errors="coerce")
-df["transaction_amount"] = pd.to_numeric(df["transaction_amount"], errors="coerce")
-
-# Fix the booleans
-
-df['is_fraud'].info()
-bool_cols = ["is_fraud", "is_international"]
-for col in bool_cols:
-    df[col] = df[col].astype(int)
-
-# Fill missing transaction_state with "Intl"
-df["transaction_state"] = df["transaction_state"].fillna("Intl")
-
-# remove the missing transaction_city due to low count of missing values
-df = df.dropna(subset=["transaction_city"])
-
-
-# Remove Identifier Columns
-id_cols = [ "transaction_id", "card_number", "cardholder_id", "merchant_id"]
-df = df.drop(columns=id_cols)
-
-# Remove Duplicates
-df = df.drop_duplicates()
-
-
-# ============================================================
-#  FEATURE ENGINEERING
-# ============================================================
-
-df["year"] = df["transaction_datetime"].dt.year
-df["month"] = df["transaction_datetime"].dt.month
-df["day"] = df["transaction_datetime"].dt.day
-df["hour"] = df["transaction_datetime"].dt.hour
-df["dayofweek"] = df["transaction_datetime"].dt.dayofweek
+file = "Dataset/credit-card-fraud-detection.csv"
+df = pd.read_csv(file)
 
 # ============================================================
 #  SPLIT FEATURES / TARGET
@@ -125,7 +74,7 @@ model = KNeighborsClassifier()
 
 pipeline = ImbPipeline(steps=[
     ("preprocess", preprocessor),
-    ("smote", SMOTE(random_state=41)),
+    ("smote", SMOTE(random_state=40)),
     ("model", model)
 ])
 
@@ -136,7 +85,7 @@ pipeline = ImbPipeline(steps=[
 # ============================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.4, random_state=41, stratify=y
+    X, y, test_size=0.4, random_state=40, stratify=y
 )
 
 # ============================================================
@@ -156,3 +105,47 @@ print("\nClassification Report:\n", classification_report(y_test, y_pred))
 print("\nROC AUC:", roc_auc_score(y_test, y_proba))
 print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred))
 
+
+# ============================================================
+# GET FEATURE NAMES AFTER PREPROCESSING
+# ============================================================
+
+# Extract encoded categorical feature names
+ohe = pipeline.named_steps["preprocess"].named_transformers_["cat"]["onehot"]
+ohe_features = ohe.get_feature_names_out(categorical_features)
+
+# Full feature list in transformed space
+all_features = list(numeric_features) + list(ohe_features)
+
+
+# ============================================================
+# PERMUTATION-BASED FEATURE IMPORTANCE (KNN)
+# ============================================================
+
+
+# Convert sparse matrix to dense array
+X_test_transformed = pipeline.named_steps["preprocess"].transform(X_test).toarray()
+
+results = permutation_importance(
+    estimator=pipeline.named_steps["model"],
+    X=X_test_transformed,
+    y=y_test,
+    n_repeats=3,
+    random_state=40,
+    scoring="f1"   # You can use recall, accuracy, etc.
+)
+
+# Store results in a DataFrame
+perm_importance = pd.DataFrame({
+    "feature": all_features,
+    "importance_mean": results.importances_mean,
+    "importance_std": results.importances_std
+}).sort_values(by="importance_mean", ascending=False)
+
+
+# ============================================================
+# PRINT TOP IMPORTANT FEATURES
+# ============================================================
+
+print("\nPermutation-Based Feature Importance (KNN):")
+print(perm_importance.head(5))

@@ -15,33 +15,8 @@ from xgboost import XGBClassifier
 # LOAD DATA
 # ============================================================
 
-df = pd.read_csv("C:/Users/User.DESKTOP-LUMR9IQ/Documents/14570063-ML-Assignment/credit-card-fraud-detection.csv")
-
-# ============================================================
-# CLEANING AND FEATURE ENGINEERING
-# ============================================================
-
-df["transaction_datetime"] = pd.to_datetime(df["transaction_datetime"], errors="coerce")
-df["cardholder_age"] = pd.to_numeric(df["cardholder_age"], errors="coerce")
-df["transaction_amount"] = pd.to_numeric(df["transaction_amount"], errors="coerce")
-
-bool_cols = ["is_fraud", "is_international"]
-for col in bool_cols:
-    df[col] = df[col].astype(int)
-
-df["transaction_state"] = df["transaction_state"].fillna("Intl")
-df = df.dropna(subset=["transaction_city"])
-
-id_cols = ["transaction_id", "card_number", "cardholder_id", "merchant_id"]
-df = df.drop(columns=id_cols)
-df = df.drop_duplicates()
-
-# Feature engineering
-df["year"] = df["transaction_datetime"].dt.year
-df["month"] = df["transaction_datetime"].dt.month
-df["day"] = df["transaction_datetime"].dt.day
-df["hour"] = df["transaction_datetime"].dt.hour
-df["dayofweek"] = df["transaction_datetime"].dt.dayofweek
+file = "Dataset/credit-card-fraud-detection.csv"
+df = pd.read_csv(file)
 
 # ============================================================
 # SPLIT FEATURES / TARGET
@@ -72,7 +47,7 @@ preprocessor = ColumnTransformer(
 # ============================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.45, random_state=42, stratify=y
+    X, y, test_size=0.45, random_state=41, stratify=y
 )
 
 # ============================================================
@@ -113,7 +88,7 @@ search = RandomizedSearchCV(
     cv=3,
     verbose=2,
     n_jobs=-1,
-    random_state=42
+    random_state=41
 )
 
 search.fit(X_train, y_train)
@@ -149,5 +124,5 @@ all_features = list(numeric_features) + list(ohe_features)
 importances = best_model.named_steps["model"].feature_importances_
 feat_imp = pd.Series(importances, index=all_features).sort_values(ascending=False)
 
-print("\nTop 20 Important Features:\n")
-print(feat_imp.head(20))
+print("\nTop 5 Important Features:\n")
+print(feat_imp.head(5))
