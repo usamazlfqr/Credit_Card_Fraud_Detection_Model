@@ -1,5 +1,4 @@
 # Credit Card Fraud Detection Model
-[![Ask DeepWiki](https://devin.ai/assets/askdeepwiki.png)](https://deepwiki.com/usamazlfqr/Credit_Card_Fraud_Detection_Model)
 
 This repository contains a machine learning project for detecting fraudulent credit card transactions. The project implements and compares three different classification algorithms—XGBoost, Random Forest, and K-Nearest Neighbors (KNN)—with a focus on handling imbalanced datasets and extracting interpretable insights.
 
