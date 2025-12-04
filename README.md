@@ -3,8 +3,8 @@
 This repository contains a machine learning project for detecting fraudulent credit card transactions. The project implements and compares three different classification algorithms—XGBoost, Random Forest, and K-Nearest Neighbors (KNN)—with a focus on handling imbalanced datasets and extracting interpretable insights.
 
 ## Dataset
-
-The project uses the `credit-card-fraud-detection.csv` dataset, which contains historical credit card transactions. Key features include:
+The dataset used is sourced from GoMask AI Marketplace and contains historical credit card transactions with fraud labels.
+It contains historical credit card transactions. Key features include:
 - `transaction_amount`
 - `merchant_category`
 - `transaction_type`
